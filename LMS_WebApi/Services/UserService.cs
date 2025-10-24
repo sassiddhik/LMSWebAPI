@@ -1,0 +1,135 @@
+﻿using LMS_WebApi.ApplicationDBContext;
+using LMS_WebApi.Interface;
+using LMS_WebApi.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace LMS_WebApi.Services
+{
+    public class UserService : IMemberService<Member>
+    {
+        private readonly AppDbContext _context;
+        private readonly ILogger<UserService> _logger;
+
+        public UserService(AppDbContext context, ILogger<UserService> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
+
+        public async Task<IEnumerable<Member>> GetAllAsync()
+        {
+            try
+            {
+                return await _context.Users.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving users");
+                throw new Exception("Something went wrong when retrieving user", ex);
+            }
+        }
+
+        public async Task<Member> GetByIdAsync(Guid id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User with id {id} not found.");
+            }
+
+            return user;
+        }
+
+        public async Task<Member> GetByEmailAsync(string email)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User with email {email} not found.");
+            }
+
+            return user;
+        }
+
+        public async Task<Member> AddAsync(Member request)
+        {
+            try
+            {
+                request.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(request.Password, 11);
+                request.DateJoined = DateTime.Now;
+
+                await _context.Users.AddAsync(request);
+                await _context.SaveChangesAsync();
+
+                return request;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while creating the user");
+                throw new Exception("An error occurred while creating the user", ex);
+            }
+        }
+
+        public async Task<Member> UpdateAsync(Guid id, Member request)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User with id {id} not found.");
+            }
+            try
+            {
+                if (!string.IsNullOrEmpty(request.UserName))
+                {
+                    user.UserName = request.UserName;
+                }
+                if (!string.IsNullOrEmpty(request.Email))
+                {
+                    user.Email = request.Email;
+                }
+                if (!string.IsNullOrEmpty(request.Password))
+                {
+                    user.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(request.Password, 11);
+                }
+                if (request.ProfilePicture != null)
+                {
+                    user.ProfilePicture = request.ProfilePicture;
+                }
+                if (!string.IsNullOrEmpty(request.UserRole.ToString()))
+                {
+                    user.UserRole = request.UserRole;
+                }
+                if (request.IsBanned.HasValue)
+                {
+                    user.IsBanned = request.IsBanned.Value;
+                }
+                if (request.IsLocked.HasValue)
+                {
+                    user.IsLocked = request.IsLocked.Value;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while updating the user");
+                throw new Exception("An error occurred while updating the user", ex);
+            }
+        }
+
+        public async Task DeleteAsync(Guid id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                throw new KeyNotFoundException($"User with id {id} not found.");
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+        }
+    }
+}

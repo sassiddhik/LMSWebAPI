@@ -1,0 +1,44 @@
+﻿using LMS_WebApi.Models;
+using System;
+using System.ComponentModel.DataAnnotations;
+
+namespace LMS_WebApi.Models
+{
+    public class Book
+    {
+        [Key]
+        public Guid Id { get; set; }
+
+        [StringLength(255, MinimumLength = 3)]
+        [Required]
+        public required string Title { get; set; }
+
+        [StringLength(80, MinimumLength = 3)]
+        [Required]
+        public required string Author { get; set; }
+
+        [StringLength(255, MinimumLength = 5)]
+        [Required]
+        public required string ISBN { get; set; }
+
+        [StringLength(255, MinimumLength = 3)]
+        [Required]
+        public required string Publisher { get; set; }
+
+        [StringLength(255, MinimumLength = 3)]
+        [Required]
+        public required DateTime PublishedDate { get; set; }
+
+        public string? Description { get; set; }
+        public bool? CopiesAvailable { get; set; }
+        public int? TotalCopies { get; set; }
+        public Guid CategoryId { get; set; }
+        public Category Category { get; set; }
+
+        public DateTime? CreatedAt { get; set; } = DateTime.Now;
+        public DateTime? UpdatedAt { get; set; } = DateTime.Now;
+
+        public bool IsAvailable { get; set; }
+    }
+}
+
